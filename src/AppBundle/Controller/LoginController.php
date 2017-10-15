@@ -5,18 +5,33 @@ namespace AppBundle\Controller;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\Request;
+use AppBundle\Form\User;
+use AppBundle\Entity\Member;
+use Doctrine\ORM\EntityManagerInterface;
 
-class LoginController extends \Symfony\Component\HttpKernel\Tests\Controller
+
+class LoginController extends Controller
 {
     /**
      * @Route("/login", name="login_form")
      */
-    public function indexAction()
+    public function indexAction(Request $request)
     {
-//        return new Response(
-//            '<html><body>Login</body></html>'
-//        );
-         $this->render('default/index.html.twig');
+        
+        $form = $this->createForm(User::class);
+        $form->handleRequest($request);
+        if ($form->isSubmitted() && $form->isValid()) {
+            $userData = $form->getData();    
+            $member = new Member();
+            $member->setUsername($userData['username']);
+            $member->setPassword($userData['password']);
+            
+            $em = $this->getDoctrine()->getManager();
+            $em->persist($member);
+            $em->flush();
+        }
+        return $this->render('login/index.twig',['form' => $form->createView()]);
     }
     
     /**
@@ -29,8 +44,11 @@ class LoginController extends \Symfony\Component\HttpKernel\Tests\Controller
      */
     public function listAction($page = 1)
     {
-        return new Response(
-            '<html><body>user list</body></html>'
-        );
+        $repository = $this->getDoctrine()->getRepository(Member::class);        
+        $members = $repository->findAll();
+        echo '<pre>';
+        print_r($members);
+        
+        return $this->render('login/list.twig');
     }
 }
